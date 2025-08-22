@@ -21,8 +21,7 @@
     }
   ],
   "vars": {
-    "SCREENSHOT_API_KEY": "key_uByFWv5m7pLgwBUxefT53A",
-    "FAL_KEY": "your_fal_key_here"
+    "SCREENSHOT_API_KEY": "key_uByFWv5m7pLgwBUxefT53A"
   }
   /**
    * Smart Placement
