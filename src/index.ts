@@ -13,12 +13,6 @@ app.get("/", (c) => {
   `);
 });
 
-app.get("/message", (c) => {
-  return c.text("wtf");
-});
-
-const KEY = "key_uByFWv5m7pLgwBUxefT53A";
-
 app.get("/api/image", async (c) => {
   const site = c.req.query("site");
 
@@ -52,7 +46,7 @@ app.get("/api/image", async (c) => {
     // Generate screenshot using Screenshot API
     const screenshotUrl = `https://api.screenshotapi.com/take?url=${encodeURIComponent(
       site
-    )}&apiKey=${KEY}`;
+    )}&apiKey=${c.env.SCREENSHOT_API_KEY}`;
     const screenshotResponse = await fetch(screenshotUrl);
 
     if (!screenshotResponse.ok) {
