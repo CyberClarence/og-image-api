@@ -46,7 +46,7 @@ app.get("/api/image", async (c) => {
     // Generate screenshot using Screenshot API
     const screenshotUrl = `https://api.screenshotapi.com/take?url=${encodeURIComponent(
       site
-    )}&apiKey=${c.env.SCREENSHOT_API_KEY}`;
+    )}&apiKey=${process.env.SCREENSHOT_API_KEY}`;
     const screenshotResponse = await fetch(screenshotUrl);
 
     if (!screenshotResponse.ok) {
