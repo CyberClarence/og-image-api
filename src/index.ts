@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { fal } from "@fal-ai/client";
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -20,6 +21,8 @@ app.get("/api/image", async (c) => {
   }
 
   try {
+    // Configure FAL with credentials
+    fal.config({ credentials: c.env.FAL_KEY });
 
     // Create keys for both images
     const ogImageKey = `og-${encodeURIComponent(site)}.png`;
@@ -65,7 +68,9 @@ app.get("/api/image", async (c) => {
 
     // Check if image is less than 4MB
     if (screenshotBuffer.byteLength > 4 * 1024 * 1024) {
-      throw new Error("Screenshot image is too large (>4MB) for OpenAI editing");
+      throw new Error(
+        "Screenshot image is too large (>4MB) for OpenAI editing"
+      );
     }
 
     // Save screenshot to R2 bucket
@@ -75,39 +80,34 @@ app.get("/api/image", async (c) => {
       },
     });
 
-    // Use gpt-image-1 to edit the image directly from the screenshot buffer
-    const formData = new FormData();
-    const imageBlob = new Blob([screenshotBuffer], { type: "image/png" });
-    formData.append("model", "gpt-image-1");
-    formData.append("image", imageBlob, "screenshot.png");
-    formData.append("prompt", `Transform this website screenshot into a simplified Open Graph image. Show the site name clearly at the top, followed by one short tagline or key metric in bold text. Keep the composition minimal, clean, and mobile-friendly with plenty of white space. Add only one small playful icon or chart line, drawn in a child-like pencil sketch style on textured Canson paper. Ensure the text is large, sharp, and fully readable. Style it as a professional social media preview optimized for 1200x630 aspect ratio.`);
-    formData.append("size", "1024x1024");
-    formData.append("n", "1");
+    // Convert screenshot buffer to data URL for FAL
+    const base64Screenshot = btoa(
+      String.fromCharCode(...new Uint8Array(screenshotBuffer))
+    );
+    const imageDataUrl = `data:image/png;base64,${base64Screenshot}`;
 
-    const openaiResponse = await fetch("https://api.openai.com/v1/images/edits", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${c.env.OPENAI_API_KEY}`,
+    // Use FAL Flux image-to-image to edit the screenshot
+    const falResult = await fal.subscribe("fal-ai/flux-pro/kontext", {
+      input: {
+        image_url: imageDataUrl,
+        prompt: `Transform this website screenshot into a simplified Open Graph image. Show the site name clearly at the top, followed by one short tagline or key metric in bold text. Keep the composition minimal, clean, and mobile-friendly with plenty of white space. Add only one small playful icon or chart line, drawn in a child-like pencil sketch style on textured Canson paper. Ensure the text is large, sharp, and fully readable. Style it as a professional social media preview optimized for 1200x630 aspect ratio.`,
+        aspect_ratio: "3:4",
+        seed: 42,
+        sync_mode: true,
       },
-      body: formData,
     });
 
-    if (!openaiResponse.ok) {
-      const errorText = await openaiResponse.text();
-      throw new Error(`OpenAI API failed: ${openaiResponse.status} - ${errorText}`);
+    if (!falResult.data?.images?.[0]?.url) {
+      throw new Error("FAL AI did not return image URL");
     }
 
-    const openaiData: { data: Array<{ url: string }> } = await openaiResponse.json();
+    // Fetch the edited image from FAL's URL
+    const editedImageResponse = await fetch(falResult.data.images[0].url);
 
-    if (!openaiData.data?.[0]?.url) {
-      throw new Error("OpenAI did not return image URL");
-    }
-
-    // Fetch the edited image from OpenAI's URL
-    const editedImageResponse = await fetch(openaiData.data[0].url);
-    
     if (!editedImageResponse.ok) {
-      throw new Error(`Failed to fetch edited image: ${editedImageResponse.status}`);
+      throw new Error(
+        `Failed to fetch edited image: ${editedImageResponse.status}`
+      );
     }
 
     const ogImageBuffer = await editedImageResponse.arrayBuffer();

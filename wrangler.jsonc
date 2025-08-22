@@ -20,7 +20,10 @@
       "bucket_name": "og-image-api"
     }
   ],
-  "vars": {}
+  "vars": {
+    "SCREENSHOT_API_KEY": "key_uByFWv5m7pLgwBUxefT53A",
+    "FAL_KEY": "your_fal_key_here"
+  }
   /**
    * Smart Placement
    * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
