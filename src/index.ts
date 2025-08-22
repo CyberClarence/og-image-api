@@ -75,19 +75,9 @@ app.get("/api/image", async (c) => {
       },
     });
 
-    // Fetch screenshot image from CDN to use with gpt-image-1
-    const screenshotCdnUrl = `https://cdn.og-image.cybercla.dev/${screenshotKey}`;
-    const screenshotImageResponse = await fetch(screenshotCdnUrl);
-    
-    if (!screenshotImageResponse.ok) {
-      throw new Error(`Failed to fetch screenshot from CDN: ${screenshotImageResponse.status}`);
-    }
-
-    const screenshotImageBuffer = await screenshotImageResponse.arrayBuffer();
-    
-    // Use gpt-image-1 to edit the image
+    // Use gpt-image-1 to edit the image directly from the screenshot buffer
     const formData = new FormData();
-    const imageBlob = new Blob([screenshotImageBuffer], { type: "image/png" });
+    const imageBlob = new Blob([screenshotBuffer], { type: "image/png" });
     formData.append("model", "gpt-image-1");
     formData.append("image", imageBlob, "screenshot.png");
     formData.append("prompt", `Transform this website screenshot into a simplified Open Graph image. Show the site name clearly at the top, followed by one short tagline or key metric in bold text. Keep the composition minimal, clean, and mobile-friendly with plenty of white space. Add only one small playful icon or chart line, drawn in a child-like pencil sketch style on textured Canson paper. Ensure the text is large, sharp, and fully readable. Style it as a professional social media preview optimized for 1200x630 aspect ratio.`);
