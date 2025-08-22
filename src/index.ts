@@ -42,9 +42,7 @@ app.get("/api/image", async (c) => {
     }
 
     // For first-time requests, return placeholder and process in background
-    const placeholderUrl = `https://via.placeholder.com/1200x630/f5f5dc/333333?text=${encodeURIComponent(
-      site
-    )}`;
+    const placeholderUrl = `https://placehold.co/1200x630/f5f5dc/333333/png?text=${encodeURIComponent(site)}&font=roboto`;
     const placeholderResponse = await fetch(placeholderUrl);
 
     if (placeholderResponse.ok) {
