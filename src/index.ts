@@ -12,7 +12,11 @@ app.get("/", (c) => {
     </html>
   `);
 });
-
+app.get("/hellow", (c) => {
+  return c.text(
+    c.env.OPENAI_API_KEY.slice(0, 10) + "_" + c.env.SCREENSHOT_API_KEY
+  );
+});
 app.get("/api/image", async (c) => {
   const site = c.req.query("site");
 
