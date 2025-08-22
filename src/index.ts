@@ -86,14 +86,18 @@ app.get("/api/image", async (c) => {
     );
     const imageDataUrl = `data:image/png;base64,${base64Screenshot}`;
 
-    // Use FAL Flux image-to-image to edit the screenshot
-    const falResult = await fal.subscribe("fal-ai/flux-pro/kontext", {
+    // Use FAL Flux image-to-image to create simplified drawing
+    const falResult = await fal.subscribe("fal-ai/flux/dev/image-to-image", {
       input: {
         image_url: imageDataUrl,
-        prompt: `Create a simplified childish drawing on textured Canson paper of what's shown on this website`,
-        aspect_ratio: "3:4",
+        prompt: `Transform into a hand-drawn sketch on textured Canson paper, childish drawing style with pencil strokes, simple boxes for metrics, handwritten text`,
+        strength: 0.8,
+        guidance_scale: 3.5,
+        num_inference_steps: 20,
+        width: 1200,
+        height: 630,
         seed: 42,
-        sync_mode: true,
+        sync_mode: true
       },
     });
 
