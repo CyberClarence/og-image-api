@@ -87,14 +87,13 @@ app.get("/api/image", async (c) => {
     const imageDataUrl = `data:image/png;base64,${base64Screenshot}`;
 
     // Use Flux Dev image-to-image for better sketch transformation
-    const falResult = await fal.subscribe("fal-ai/flux/dev/image-to-image", {
+    const falResult = await fal.subscribe("fal-ai/flux-pro/kontext", {
       input: {
         image_url: imageDataUrl,
         prompt:
           "Transform into a hand-drawn pencil sketch on textured beige Canson paper. Convert all UI elements to simple drawn boxes with colored pencil shading (blue, green, pink). Make text look handwritten with pencil. Keep the same layout and information but in childish drawing style with rough pencil strokes and paper texture visible.",
-        strength: 0.85,
-        guidance_scale: 7.5,
-        num_inference_steps: 35,
+        aspect_ratio: "16:9",
+        // guidance_scale: 7.5,
       },
     });
 
