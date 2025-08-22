@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import OpenAI from "openai";
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -21,10 +20,6 @@ app.get("/api/image", async (c) => {
   }
 
   try {
-    // Initialize OpenAI client
-    const openai = new OpenAI({
-      apiKey: c.env.OPENAI_API_KEY,
-    });
 
     // Create keys for both images
     const ogImageKey = `og-${encodeURIComponent(site)}.png`;
@@ -80,24 +75,36 @@ app.get("/api/image", async (c) => {
       },
     });
 
-    // Convert screenshot to proper format for OpenAI editing
-    const imageFile = new File([screenshotBuffer], "screenshot.png", { type: "image/png" });
+    // Generate AI-enhanced OG image using OpenAI API directly with fetch
+    const formData = new FormData();
+    const imageBlob = new Blob([screenshotBuffer], { type: "image/png" });
+    formData.append("image", imageBlob, "screenshot.png");
+    formData.append("prompt", `Transform this website screenshot into a simplified Open Graph image. Show the site name clearly at the top, followed by one short tagline or key metric in bold text. Keep the composition minimal, clean, and mobile-friendly with plenty of white space. Add only one small playful icon or chart line, drawn in a child-like pencil sketch style on textured Canson paper. Ensure the text is large, sharp, and fully readable. Style it as a professional social media preview.`);
+    formData.append("size", "1024x1024");
+    formData.append("n", "1");
+    formData.append("response_format", "url");
 
-    // Generate AI-enhanced OG image using OpenAI image editing
-    const openaiResponse = await openai.images.edit({
-      image: imageFile,
-      prompt: `Transform this website screenshot into a simplified Open Graph image. Show the site name clearly at the top, followed by one short tagline or key metric in bold text. Keep the composition minimal, clean, and mobile-friendly with plenty of white space. Add only one small playful icon or chart line, drawn in a child-like pencil sketch style on textured Canson paper. Ensure the text is large, sharp, and fully readable. Style it as a professional social media preview.`,
-      size: "1024x1024",
-      n: 1,
-      response_format: "url",
+    const openaiResponse = await fetch("https://api.openai.com/v1/images/edits", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${c.env.OPENAI_API_KEY}`,
+      },
+      body: formData,
     });
 
-    if (!openaiResponse.data?.[0]?.url) {
+    if (!openaiResponse.ok) {
+      const errorText = await openaiResponse.text();
+      throw new Error(`OpenAI API failed: ${openaiResponse.status} - ${errorText}`);
+    }
+
+    const openaiData = await openaiResponse.json();
+
+    if (!openaiData.data?.[0]?.url) {
       throw new Error("OpenAI did not return an image URL");
     }
 
     // Fetch the AI-generated image
-    const ogImageResponse = await fetch(openaiResponse.data[0].url);
+    const ogImageResponse = await fetch(openaiData.data[0].url);
 
     if (!ogImageResponse.ok) {
       throw new Error(`Failed to fetch AI image: ${ogImageResponse.status}`);
