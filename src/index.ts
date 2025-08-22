@@ -12,11 +12,7 @@ app.get("/", (c) => {
     </html>
   `);
 });
-app.get("/hellow", (c) => {
-  return c.text(
-    c.env.OPENAI_API_KEY.slice(0, 10) + "_" + c.env.SCREENSHOT_API_KEY
-  );
-});
+
 app.get("/api/image", async (c) => {
   const site = c.req.query("site");
 
@@ -63,7 +59,7 @@ app.get("/api/image", async (c) => {
       throw new Error("Screenshot API did not return an image URL");
     }
 
-    // Fetch and store the screenshot
+    // Fetch the screenshot image
     const imageResponse = await fetch(data.outputUrl);
 
     if (!imageResponse.ok) {
@@ -79,12 +75,14 @@ app.get("/api/image", async (c) => {
       },
     });
 
-    // Generate AI-enhanced OG image using OpenAI DALL-E 3
-    // Note: Using generation instead of editing since OpenAI editing requires specific formats
-    const openaiResponse = await openai.images.generate({
-      prompt: `Create a simplified Open Graph image for the website "${site}". Show the site name clearly at the top, followed by one short tagline or key metric in bold text. Keep the composition minimal, clean, and mobile-friendly with plenty of white space. Add only one small playful icon or chart line, drawn in a child-like pencil sketch style on textured Canson paper. Ensure the text is large, sharp, and fully readable. Style it as a professional social media preview.`,
-      size: "1024x1024",
+    // Convert screenshot to proper format for OpenAI editing
+    const imageFile = new File([screenshotBuffer], "screenshot.png", { type: "image/png" });
 
+    // Generate AI-enhanced OG image using OpenAI image editing
+    const openaiResponse = await openai.images.edit({
+      image: imageFile,
+      prompt: `Transform this website screenshot into a simplified Open Graph image. Show the site name clearly at the top, followed by one short tagline or key metric in bold text. Keep the composition minimal, clean, and mobile-friendly with plenty of white space. Add only one small playful icon or chart line, drawn in a child-like pencil sketch style on textured Canson paper. Ensure the text is large, sharp, and fully readable. Style it as a professional social media preview.`,
+      size: "1024x1024",
       n: 1,
       response_format: "url",
     });
