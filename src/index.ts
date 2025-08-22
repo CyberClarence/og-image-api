@@ -83,7 +83,6 @@ app.get("/api/image", async (c) => {
     formData.append("prompt", `Transform this website screenshot into a simplified Open Graph image. Show the site name clearly at the top, followed by one short tagline or key metric in bold text. Keep the composition minimal, clean, and mobile-friendly with plenty of white space. Add only one small playful icon or chart line, drawn in a child-like pencil sketch style on textured Canson paper. Ensure the text is large, sharp, and fully readable. Style it as a professional social media preview optimized for 1200x630 aspect ratio.`);
     formData.append("size", "1024x1024");
     formData.append("n", "1");
-    formData.append("response_format", "b64_json");
 
     const openaiResponse = await fetch("https://api.openai.com/v1/images/edits", {
       method: "POST",
@@ -98,19 +97,20 @@ app.get("/api/image", async (c) => {
       throw new Error(`OpenAI API failed: ${openaiResponse.status} - ${errorText}`);
     }
 
-    const openaiData: { data: Array<{ b64_json: string }> } = await openaiResponse.json();
+    const openaiData: { data: Array<{ url: string }> } = await openaiResponse.json();
 
-    if (!openaiData.data?.[0]?.b64_json) {
-      throw new Error("OpenAI did not return image data");
+    if (!openaiData.data?.[0]?.url) {
+      throw new Error("OpenAI did not return image URL");
     }
 
-    // Decode base64 image data
-    const base64Data = openaiData.data[0].b64_json;
-    const binaryString = atob(base64Data);
-    const ogImageBuffer = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      ogImageBuffer[i] = binaryString.charCodeAt(i);
+    // Fetch the edited image from OpenAI's URL
+    const editedImageResponse = await fetch(openaiData.data[0].url);
+    
+    if (!editedImageResponse.ok) {
+      throw new Error(`Failed to fetch edited image: ${editedImageResponse.status}`);
     }
+
+    const ogImageBuffer = await editedImageResponse.arrayBuffer();
 
     // Save AI-generated OG image to R2 bucket
     await c.env.OG_IMAGES_BUCKET.put(ogImageKey, ogImageBuffer, {
