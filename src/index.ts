@@ -27,8 +27,8 @@ app.get("/api/image", async (c) => {
     });
 
     // Create keys for both images
-    const ogImageKey = `og-${encodeURIComponent(site)}.jpg`;
-    const screenshotKey = `screenshot-${encodeURIComponent(site)}.jpg`;
+    const ogImageKey = `og-${encodeURIComponent(site)}.png`;
+    const screenshotKey = `screenshot-${encodeURIComponent(site)}.png`;
 
     // Check if OG image already exists in R2 bucket
     const existingOGImage = await c.env.OG_IMAGES_BUCKET.get(ogImageKey);
@@ -37,16 +37,16 @@ app.get("/api/image", async (c) => {
       // Return existing OG image
       return new Response(existingOGImage.body, {
         headers: {
-          "Content-Type": "image/jpeg",
+          "Content-Type": "image/png",
           "Cache-Control": "public, max-age=86400", // 24 hours
         },
       });
     }
 
-    // Generate screenshot using Screenshot API
+    // Generate screenshot using Screenshot API with PNG format
     const screenshotUrl = `https://api.screenshotapi.com/take?url=${encodeURIComponent(
       site
-    )}&apiKey=${c.env.SCREENSHOT_API_KEY}`;
+    )}&apiKey=${c.env.SCREENSHOT_API_KEY}&format=png&width=1024&height=768`;
     const screenshotResponse = await fetch(screenshotUrl);
 
     if (!screenshotResponse.ok) {
@@ -68,10 +68,15 @@ app.get("/api/image", async (c) => {
 
     const screenshotBuffer = await imageResponse.arrayBuffer();
 
+    // Check if image is less than 4MB
+    if (screenshotBuffer.byteLength > 4 * 1024 * 1024) {
+      throw new Error("Screenshot image is too large (>4MB) for OpenAI editing");
+    }
+
     // Save screenshot to R2 bucket
     await c.env.OG_IMAGES_BUCKET.put(screenshotKey, screenshotBuffer, {
       httpMetadata: {
-        contentType: "image/jpeg",
+        contentType: "image/png",
       },
     });
 
@@ -103,14 +108,14 @@ app.get("/api/image", async (c) => {
     // Save AI-generated OG image to R2 bucket
     await c.env.OG_IMAGES_BUCKET.put(ogImageKey, ogImageBuffer, {
       httpMetadata: {
-        contentType: "image/jpeg",
+        contentType: "image/png",
       },
     });
 
     // Return the AI-generated OG image
     return new Response(ogImageBuffer, {
       headers: {
-        "Content-Type": "image/jpeg",
+        "Content-Type": "image/png",
         "Cache-Control": "public, max-age=86400", // 24 hours
       },
     });
