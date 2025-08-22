@@ -90,7 +90,7 @@ app.get("/api/image", async (c) => {
     const falResult = await fal.subscribe("fal-ai/flux-pro/kontext", {
       input: {
         image_url: imageDataUrl,
-        prompt: `Transform this website screenshot into a simplified Open Graph image. Show the site name clearly at the top, followed by one short tagline or key metric in bold text. Keep the composition minimal, clean, and mobile-friendly with plenty of white space. Add only one small playful icon or chart line, drawn in a child-like pencil sketch style on textured Canson paper. Ensure the text is large, sharp, and fully readable. Style it as a professional social media preview optimized for 1200x630 aspect ratio.`,
+        prompt: `Create a simplified childish drawing on textured Canson paper of what's shown on this website`,
         aspect_ratio: "3:4",
         seed: 42,
         sync_mode: true,
