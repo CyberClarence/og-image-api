@@ -80,7 +80,7 @@ app.get("/api/image", async (c) => {
     const openaiResponse = await openai.images.generate({
       prompt: `Create a simplified Open Graph image for the website "${site}". Show the site name clearly at the top, followed by one short tagline or key metric in bold text. Keep the composition minimal, clean, and mobile-friendly with plenty of white space. Add only one small playful icon or chart line, drawn in a child-like pencil sketch style on textured Canson paper. Ensure the text is large, sharp, and fully readable. Style it as a professional social media preview.`,
       size: "1024x1024",
-      quality: "standard", // Use standard quality to keep costs low
+
       n: 1,
       response_format: "url",
     });
