@@ -87,15 +87,18 @@ app.get("/api/image", async (c) => {
     const imageDataUrl = `data:image/png;base64,${base64Screenshot}`;
 
     // Use FAL Flux Pro for better text and typography handling
-    const falResult = await fal.subscribe("fal-ai/image-editing/cartoonify", {
-      input: {
-        // prompt: `Transform this website screenshot into a hand-drawn sketch on textured Canson paper. Convert all text into handwritten style, make UI elements look like simple pencil drawings, preserve readable typography but in sketch form, childish drawing aesthetic`,
-        image_url: imageDataUrl,
-        // num_inference_steps: 25,
-        // guidance_scale: 3.5,
-        sync_mode: true,
-      },
-    });
+    const falResult = await fal.subscribe(
+      "fal-ai/image-editing/youtube-thumbnails",
+      {
+        input: {
+          // prompt: `Transform this website screenshot into a hand-drawn sketch on textured Canson paper. Convert all text into handwritten style, make UI elements look like simple pencil drawings, preserve readable typography but in sketch form, childish drawing aesthetic`,
+          image_url: imageDataUrl,
+          // num_inference_steps: 25,
+          // guidance_scale: 3.5,
+          sync_mode: true,
+        },
+      }
+    );
 
     if (!falResult.data?.images?.[0]?.url) {
       throw new Error("FAL AI did not return image URL");
