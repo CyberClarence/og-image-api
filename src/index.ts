@@ -94,10 +94,7 @@ app.get("/api/image", async (c) => {
         strength: 0.8,
         guidance_scale: 3.5,
         num_inference_steps: 20,
-        width: 1200,
-        height: 630,
-        seed: 42,
-        sync_mode: true
+        sync_mode: true,
       },
     });
 
