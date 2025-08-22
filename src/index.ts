@@ -75,23 +75,32 @@ app.get("/api/image", async (c) => {
       },
     });
 
-    // Generate AI-enhanced OG image using OpenAI generation API with screenshot reference
+    // Fetch screenshot image from CDN to use with gpt-image-1
     const screenshotCdnUrl = `https://cdn.og-image.cybercla.dev/${screenshotKey}`;
+    const screenshotImageResponse = await fetch(screenshotCdnUrl);
     
-    const openaiResponse = await fetch("https://api.openai.com/v1/images/generations", {
+    if (!screenshotImageResponse.ok) {
+      throw new Error(`Failed to fetch screenshot from CDN: ${screenshotImageResponse.status}`);
+    }
+
+    const screenshotImageBuffer = await screenshotImageResponse.arrayBuffer();
+    
+    // Use gpt-image-1 to edit the image
+    const formData = new FormData();
+    const imageBlob = new Blob([screenshotImageBuffer], { type: "image/png" });
+    formData.append("model", "gpt-image-1");
+    formData.append("image", imageBlob, "screenshot.png");
+    formData.append("prompt", `Transform this website screenshot into a simplified Open Graph image. Show the site name clearly at the top, followed by one short tagline or key metric in bold text. Keep the composition minimal, clean, and mobile-friendly with plenty of white space. Add only one small playful icon or chart line, drawn in a child-like pencil sketch style on textured Canson paper. Ensure the text is large, sharp, and fully readable. Style it as a professional social media preview optimized for 1200x630 aspect ratio.`);
+    formData.append("size", "1024x1024");
+    formData.append("n", "1");
+    formData.append("response_format", "b64_json");
+
+    const openaiResponse = await fetch("https://api.openai.com/v1/images/edits", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${c.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: "dall-e-3",
-        prompt: `Create a simplified Open Graph image for the website "${site}" (screenshot available at ${screenshotCdnUrl}). Show the site name clearly at the top, followed by one short tagline or key metric in bold text. Keep the composition minimal, clean, and mobile-friendly with plenty of white space. Add only one small playful icon or chart line, drawn in a child-like pencil sketch style on textured Canson paper. Ensure the text is large, sharp, and fully readable. Style it as a professional social media preview optimized for 1200x630 aspect ratio.`,
-        size: "1024x1024",
-        quality: "standard",
-        n: 1,
-        response_format: "b64_json"
-      }),
+      body: formData,
     });
 
     if (!openaiResponse.ok) {
