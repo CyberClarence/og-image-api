@@ -89,9 +89,9 @@ app.get("/api/image", async (c) => {
     // Use Recraft v3 image-to-image for optimal text and sketch conversion
     const falResult = await fal.subscribe("fal-ai/recraft/v3/image-to-image", {
       input: {
-        prompt: `Transform this website screenshot into a hand-drawn sketch on textured Canson paper. Convert all text into handwritten style, make UI elements look like simple pencil drawings, preserve readable typography but in sketch form, childish drawing aesthetic`,
+        prompt: `Transform this website screenshot into a hand-drawn childish sketch on textured Canson paper. Convert all text into handwritten style, make UI elements look like simple childishpencil drawings, preserve readable typography but in sketch form, childish drawing aesthetic and colorfull paper pencil`,
         image_url: imageDataUrl,
-        sync_mode: true,
+        style: "digital_illustration/hand_drawn",
       },
     });
 
