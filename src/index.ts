@@ -86,12 +86,15 @@ app.get("/api/image", async (c) => {
     );
     const imageDataUrl = `data:image/png;base64,${base64Screenshot}`;
 
-    // Use Recraft v3 image-to-image for optimal text and sketch conversion
-    const falResult = await fal.subscribe("fal-ai/recraft/v3/image-to-image", {
+    // Use Flux Dev image-to-image for better sketch transformation
+    const falResult = await fal.subscribe("fal-ai/flux/dev/image-to-image", {
       input: {
-        prompt: `same image in Canson paper drawing format, child's pencil drawing`,
         image_url: imageDataUrl,
-        style: "digital_illustration/hand_drawn",
+        prompt:
+          "Transform into a hand-drawn pencil sketch on textured beige Canson paper. Convert all UI elements to simple drawn boxes with colored pencil shading (blue, green, pink). Make text look handwritten with pencil. Keep the same layout and information but in childish drawing style with rough pencil strokes and paper texture visible.",
+        strength: 0.85,
+        guidance_scale: 7.5,
+        num_inference_steps: 35,
       },
     });
 
