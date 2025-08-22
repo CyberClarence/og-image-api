@@ -75,22 +75,23 @@ app.get("/api/image", async (c) => {
       },
     });
 
-    // Generate AI-enhanced OG image using OpenAI API directly with fetch
-    const formData = new FormData();
-    const imageBlob = new Blob([screenshotBuffer], { type: "image/png" });
-    formData.append("model", "dall-e-2");
-    formData.append("image", imageBlob, "screenshot.png");
-    formData.append("prompt", `Transform this website screenshot into a simplified Open Graph image. Show the site name clearly at the top, followed by one short tagline or key metric in bold text. Keep the composition minimal, clean, and mobile-friendly with plenty of white space. Add only one small playful icon or chart line, drawn in a child-like pencil sketch style on textured Canson paper. Ensure the text is large, sharp, and fully readable. Style it as a professional social media preview.`);
-    formData.append("size", "1024x1024");
-    formData.append("n", "1");
-    formData.append("response_format", "b64_json");
-
-    const openaiResponse = await fetch("https://api.openai.com/v1/images/edits", {
+    // Generate AI-enhanced OG image using OpenAI generation API with screenshot reference
+    const screenshotCdnUrl = `https://cdn.og-image.cybercla.dev/${screenshotKey}`;
+    
+    const openaiResponse = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${c.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
       },
-      body: formData,
+      body: JSON.stringify({
+        model: "dall-e-3",
+        prompt: `Create a simplified Open Graph image for the website "${site}" (screenshot available at ${screenshotCdnUrl}). Show the site name clearly at the top, followed by one short tagline or key metric in bold text. Keep the composition minimal, clean, and mobile-friendly with plenty of white space. Add only one small playful icon or chart line, drawn in a child-like pencil sketch style on textured Canson paper. Ensure the text is large, sharp, and fully readable. Style it as a professional social media preview optimized for 1200x630 aspect ratio.`,
+        size: "1024x1024",
+        quality: "standard",
+        n: 1,
+        response_format: "b64_json"
+      }),
     });
 
     if (!openaiResponse.ok) {
