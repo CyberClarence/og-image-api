@@ -86,15 +86,17 @@ app.get("/api/image", async (c) => {
     );
     const imageDataUrl = `data:image/png;base64,${base64Screenshot}`;
 
-    // Use FAL Flux image-to-image to create simplified drawing
-    const falResult = await fal.subscribe("fal-ai/flux/dev/image-to-image", {
+    // Use FAL Flux Pro for better text and typography handling
+    const falResult = await fal.subscribe("fal-ai/flux-pro", {
       input: {
+        prompt: `Transform this website screenshot into a hand-drawn sketch on textured Canson paper. Convert all text into handwritten style, make UI elements look like simple pencil drawings, preserve readable typography but in sketch form, childish drawing aesthetic`,
         image_url: imageDataUrl,
-        prompt: `Transform into a hand-drawn sketch on textured Canson paper, childish drawing style with pencil strokes, simple boxes for metrics, handwritten text`,
-        strength: 0.8,
+        width: 1200,
+        height: 630,
+        num_inference_steps: 25,
         guidance_scale: 3.5,
-        num_inference_steps: 20,
-        sync_mode: true,
+        seed: 42,
+        sync_mode: true
       },
     });
 
