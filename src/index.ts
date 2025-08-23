@@ -42,14 +42,16 @@ app.get("/api/image", async (c) => {
     }
 
     // For first-time requests, return placeholder and process in background
-    const placeholderUrl = `https://placehold.co/1200x630/f5f5dc/333333/png?text=${encodeURIComponent(site)}&font=roboto`;
+    const placeholderUrl = `https://placehold.co/1200x630/f5f5dc/333333/png?text=${encodeURIComponent(
+      site
+    )}&font=roboto`;
     const placeholderResponse = await fetch(placeholderUrl);
 
     if (placeholderResponse.ok) {
       const placeholderBuffer = await placeholderResponse.arrayBuffer();
 
       // Start background processing
-      c.executionCtx.waitUntil(processOGImageInBackground());
+      // c.executionCtx.waitUntil(processOGImageInBackground());
 
       // Return placeholder immediately
       return new Response(placeholderBuffer, {
@@ -60,95 +62,95 @@ app.get("/api/image", async (c) => {
       });
     }
 
-    async function processOGImageInBackground() {
-      try {
-        // Generate screenshot using Screenshot API with PNG format
-        const screenshotUrl = `https://api.screenshotapi.com/take?url=${encodeURIComponent(
-          site
-        )}&apiKey=${c.env.SCREENSHOT_API_KEY}&format=png&width=1024&height=768`;
-        const screenshotResponse = await fetch(screenshotUrl);
+    // async function processOGImageInBackground() {
+    //   try {
+    //     // Generate screenshot using Screenshot API with PNG format
+    //     const screenshotUrl = `https://api.screenshotapi.com/take?url=${encodeURIComponent(
+    //       site
+    //     )}&apiKey=${c.env.SCREENSHOT_API_KEY}&format=png&width=1024&height=768`;
+    //     const screenshotResponse = await fetch(screenshotUrl);
 
-        if (!screenshotResponse.ok) {
-          throw new Error(
-            `Screenshot API failed: ${screenshotResponse.status}`
-          );
-        }
+    //     if (!screenshotResponse.ok) {
+    //       throw new Error(
+    //         `Screenshot API failed: ${screenshotResponse.status}`
+    //       );
+    //     }
 
-        const data: { outputUrl: string } = await screenshotResponse.json();
+    //     const data: { outputUrl: string } = await screenshotResponse.json();
 
-        if (!data.outputUrl) {
-          throw new Error("Screenshot API did not return an image URL");
-        }
+    //     if (!data.outputUrl) {
+    //       throw new Error("Screenshot API did not return an image URL");
+    //     }
 
-        // Fetch the screenshot image
-        const imageResponse = await fetch(data.outputUrl);
+    //     // Fetch the screenshot image
+    //     const imageResponse = await fetch(data.outputUrl);
 
-        if (!imageResponse.ok) {
-          throw new Error(
-            `Failed to fetch screenshot: ${imageResponse.status}`
-          );
-        }
+    //     if (!imageResponse.ok) {
+    //       throw new Error(
+    //         `Failed to fetch screenshot: ${imageResponse.status}`
+    //       );
+    //     }
 
-        const screenshotBuffer = await imageResponse.arrayBuffer();
+    //     const screenshotBuffer = await imageResponse.arrayBuffer();
 
-        // Check if image is less than 4MB
-        if (screenshotBuffer.byteLength > 4 * 1024 * 1024) {
-          throw new Error(
-            "Screenshot image is too large (>4MB) for OpenAI editing"
-          );
-        }
+    //     // Check if image is less than 4MB
+    //     if (screenshotBuffer.byteLength > 4 * 1024 * 1024) {
+    //       throw new Error(
+    //         "Screenshot image is too large (>4MB) for OpenAI editing"
+    //       );
+    //     }
 
-        // Save screenshot to R2 bucket
-        await c.env.OG_IMAGES_BUCKET.put(screenshotKey, screenshotBuffer, {
-          httpMetadata: {
-            contentType: "image/png",
-          },
-        });
+    //     // Save screenshot to R2 bucket
+    //     await c.env.OG_IMAGES_BUCKET.put(screenshotKey, screenshotBuffer, {
+    //       httpMetadata: {
+    //         contentType: "image/png",
+    //       },
+    //     });
 
-        // Convert screenshot buffer to data URL for FAL
-        const base64Screenshot = btoa(
-          String.fromCharCode(...new Uint8Array(screenshotBuffer))
-        );
-        const imageDataUrl = `data:image/png;base64,${base64Screenshot}`;
+    //     // Convert screenshot buffer to data URL for FAL
+    //     const base64Screenshot = btoa(
+    //       String.fromCharCode(...new Uint8Array(screenshotBuffer))
+    //     );
+    //     const imageDataUrl = `data:image/png;base64,${base64Screenshot}`;
 
-        // Use Flux Dev image-to-image for better sketch transformation
-        const falResult = await fal.subscribe("fal-ai/flux-pro/kontext", {
-          input: {
-            image_url: imageDataUrl,
-            prompt:
-              "Transform into a hand-drawn pencil sketch on textured beige Canson paper. Convert all UI elements to simple drawn boxes with colored pencil shading (blue, green, pink). Make text look handwritten with pencil. Keep the same layout and information but in childish drawing style with rough pencil strokes and paper texture visible.",
-            aspect_ratio: "16:9",
-            // guidance_scale: 7.5,
-          },
-        });
+    //     // Use Flux Dev image-to-image for better sketch transformation
+    //     const falResult = await fal.subscribe("fal-ai/flux-pro/kontext", {
+    //       input: {
+    //         image_url: imageDataUrl,
+    //         prompt:
+    //           "Transform into a hand-drawn pencil sketch on textured beige Canson paper. Convert all UI elements to simple drawn boxes with colored pencil shading (blue, green, pink). Make text look handwritten with pencil. Keep the same layout and information but in childish drawing style with rough pencil strokes and paper texture visible.",
+    //         aspect_ratio: "16:9",
+    //         // guidance_scale: 7.5,
+    //       },
+    //     });
 
-        if (!falResult.data?.images?.[0]?.url) {
-          throw new Error("FAL AI did not return image URL");
-        }
+    //     if (!falResult.data?.images?.[0]?.url) {
+    //       throw new Error("FAL AI did not return image URL");
+    //     }
 
-        // Fetch the edited image from FAL's URL
-        const editedImageResponse = await fetch(falResult.data.images[0].url);
+    //     // Fetch the edited image from FAL's URL
+    //     const editedImageResponse = await fetch(falResult.data.images[0].url);
 
-        if (!editedImageResponse.ok) {
-          throw new Error(
-            `Failed to fetch edited image: ${editedImageResponse.status}`
-          );
-        }
+    //     if (!editedImageResponse.ok) {
+    //       throw new Error(
+    //         `Failed to fetch edited image: ${editedImageResponse.status}`
+    //       );
+    //     }
 
-        const ogImageBuffer = await editedImageResponse.arrayBuffer();
+    //     const ogImageBuffer = await editedImageResponse.arrayBuffer();
 
-        // Save AI-generated OG image to R2 bucket
-        await c.env.OG_IMAGES_BUCKET.put(ogImageKey, ogImageBuffer, {
-          httpMetadata: {
-            contentType: "image/png",
-          },
-        });
+    //     // Save AI-generated OG image to R2 bucket
+    //     await c.env.OG_IMAGES_BUCKET.put(ogImageKey, ogImageBuffer, {
+    //       httpMetadata: {
+    //         contentType: "image/png",
+    //       },
+    //     });
 
-        console.log(`OG image generated and saved for ${site}`);
-      } catch (error) {
-        console.error("Background OG image processing failed:", error);
-      }
-    }
+    //     console.log(`OG image generated and saved for ${site}`);
+    //   } catch (error) {
+    //     console.error("Background OG image processing failed:", error);
+    //   }
+    // }
   } catch (error) {
     console.error("Error generating OG image:", error);
     return c.json(
